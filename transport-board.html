@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hour Motors — Live Board</title>
+  <title>TruWorth Auto — Live Board</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -313,11 +313,11 @@
 <div class="shell">
 
   <header>
-    <div class="logo">Hour <span>Motors</span></div>
+    <div class="logo">TruWorth <span>Auto</span></div>
     <div class="header-center">
       <div class="header-chip">
         <div class="dot amber"></div>
-        Transport Board
+        Transport
       </div>
       <div class="header-chip">
         <div class="dot"></div>
@@ -332,12 +332,12 @@
     <!-- LEFT: Transport -->
     <div class="pane" id="pane-transport">
       <div class="pane-header">
-        <div class="pane-title">🚗 In Transport</div>
+        <div class="pane-title">In Transport</div>
         <div class="count-badge" id="transport-count">—</div>
       </div>
       <div class="scroll-viewport" id="transport-viewport">
         <div class="scroll-track" id="transport-track">
-          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+          <div class="empty"><div class="empty-icon"></div>Loading…</div>
         </div>
       </div>
     </div>
@@ -345,12 +345,12 @@
     <!-- RIGHT: Active deals -->
     <div class="pane" id="pane-retail">
       <div class="pane-header">
-        <div class="pane-title">🤝 Active / Working</div>
+        <div class="pane-title">Active / Working</div>
         <div class="count-badge" id="retail-count">—</div>
       </div>
       <div class="scroll-viewport" id="retail-viewport">
         <div class="scroll-track" id="retail-track">
-          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+          <div class="empty"><div class="empty-icon"></div>Loading…</div>
         </div>
       </div>
     </div>
@@ -446,7 +446,7 @@
       entries.length + ' vehicle' + (entries.length !== 1 ? 's' : '');
 
     if (entries.length === 0) {
-      track.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>No active transports</div>`;
+      track.innerHTML = `<div class="empty">No active transports</div>`;
       return;
     }
 
@@ -471,7 +471,7 @@
       leads.length + ' deal' + (leads.length !== 1 ? 's' : '');
 
     if (leads.length === 0) {
-      track.innerHTML = `<div class="empty"><div class="empty-icon">🤝</div>No active deals</div>`;
+      track.innerHTML = `<div class="empty">No active deals</div>`;
       return;
     }
 
@@ -488,7 +488,7 @@
           <div class="r-card-body">
             <div class="r-car-name">${carName(lead)}</div>
             <div class="r-meta">${stock}${price}</div>
-            <div class="r-assigned"><span class="icon">👤</span>${lead.assignedTo}</div>
+            <div class="r-assigned">${lead.assignedTo}</div>
           </div>
           <div class="r-updated">${timeAgo(lead.createdAt)}</div>
         </div>
