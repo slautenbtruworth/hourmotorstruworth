@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hour Motors — Live Board</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f12;
+      --surface:   #161a20;
+      --border:    #1e2229;
+      --border2:   #262b34;
+      --text:      #f0f2f5;
+      --muted:     #9ca3af;
+      --faint:     #4b5563;
+      --amber:     #f59e0b;
+      --green:     #10b981;
+      --blue:      #3b82f6;
+      --red:       #ef4444;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--amber); }
+
+    .header-center {
+      display: flex;
+      gap: 32px;
+    }
+
+    .header-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+    }
+
+    .header-chip .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    .header-chip .dot.amber { background: var(--amber); }
+
+    .clock {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--faint);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Split panes ── */
+    .panes {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane + .pane {
+      border-left: 1px solid var(--border);
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .pane-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    .count-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--border);
+      color: var(--muted);
+    }
+
+    /* ── Scrolling container ── */
+    .scroll-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scroll-track {
+      padding: 16px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Auto-scroll animation — duration set via JS */
+    .scroll-track.animating {
+      animation: scrollUp var(--scroll-duration, 120s) linear infinite;
+    }
+
+    @keyframes scrollUp {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(var(--scroll-offset, -50%)); }
+    }
+
+    /* ── Transport card ── */
+    .t-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .t-card-body { flex: 1; min-width: 0; }
+
+    .t-car-name {
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .t-car-name .year { color: var(--muted); font-weight: 400; }
+
+    .t-vin {
+      font-size: 11px;
+      font-family: "SF Mono", "Fira Mono", monospace;
+      color: var(--faint);
+      letter-spacing: 0.8px;
+      margin-top: 3px;
+    }
+
+    .t-updated {
+      font-size: 11px;
+      color: var(--faint);
+      margin-top: 5px;
+    }
+
+    .t-loc {
+      background: var(--amber);
+      color: #000;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    /* ── Active deal card ── */
+    .r-card {
+      background: var(--surface);
+      border: 1.5px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .r-card-body { flex: 1; min-width: 0; }
+
+    .r-car-name {
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .r-car-name .year { color: var(--muted); font-weight: 400; }
+
+    .r-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .r-stock {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    .r-price-inline {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    .r-assigned {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .r-assigned .icon {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .r-updated {
+      font-size: 11px;
+      color: var(--faint);
+      flex-shrink: 0;
+      text-align: right;
+      line-height: 1.6;
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 8px;
+      color: var(--faint);
+      padding: 60px 20px;
+      font-size: 15px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 4px; }
+
+    /* ── Footer ── */
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--faint);
+      flex-shrink: 0;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    .status-dot.error { background: var(--red); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="logo">Hour <span>Motors</span></div>
+    <div class="header-center">
+      <div class="header-chip">
+        <div class="dot amber"></div>
+        Transport Board
+      </div>
+      <div class="header-chip">
+        <div class="dot"></div>
+        Active Deals
+      </div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="panes">
+
+    <!-- LEFT: Transport -->
+    <div class="pane" id="pane-transport">
+      <div class="pane-header">
+        <div class="pane-title">🚗 In Transport</div>
+        <div class="count-badge" id="transport-count">—</div>
+      </div>
+      <div class="scroll-viewport" id="transport-viewport">
+        <div class="scroll-track" id="transport-track">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Active deals -->
+    <div class="pane" id="pane-retail">
+      <div class="pane-header">
+        <div class="pane-title">🤝 Active / Working</div>
+        <div class="count-badge" id="retail-count">—</div>
+      </div>
+      <div class="scroll-viewport" id="retail-viewport">
+        <div class="scroll-track" id="retail-track">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Connecting…</span>
+  </footer>
+
+</div>
+
+<script>
+  const API_TRANSPORT = 'https://api.hour-motors.com/transport/board';
+  const API_LEADS     = 'https://api.hour-motors.com/retail/leads/board';
+  const REFRESH_MS    = 30_000;
+  const CYCLE_MS      = 120_000; // 2-minute scroll cycle
+
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function tickClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (s < 60)   return s + 's ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    return Math.floor(s / 3600) + 'h ago';
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function dollars(cents) {
+    if (cents == null) return null;
+    return '$' + Math.round(cents / 100).toLocaleString('en-US');
+  }
+
+  function carName(item) {
+    const make  = item.make  || '';
+    const model = item.model || '';
+    const year  = item.year  ? `<span class="year">${item.year} </span>` : '';
+    return (make || model)
+      ? `${year}${make} ${model}`.trim()
+      : 'Unknown Vehicle';
+  }
+
+  // ── Auto-scroll setup ──────────────────────────────────────────────────────
+  // For each pane we duplicate the cards so the loop is seamless.
+  // If all cards fit in the viewport we skip the animation entirely.
+  function setupScroll(trackId, cycleMs) {
+    const track    = document.getElementById(trackId);
+    const viewport = track.parentElement;
+
+    // Remove old clones
+    track.querySelectorAll('.clone').forEach(el => el.remove());
+    track.classList.remove('animating');
+    track.style.removeProperty('--scroll-duration');
+    track.style.removeProperty('--scroll-offset');
+
+    const trackH    = track.scrollHeight;
+    const viewportH = viewport.clientHeight;
+
+    // Only scroll if content is taller than the viewport
+    if (trackH <= viewportH) return;
+
+    // Clone all cards for seamless loop
+    const originals = Array.from(track.children);
+    originals.forEach(el => {
+      const clone = el.cloneNode(true);
+      clone.classList.add('clone');
+      track.appendChild(clone);
+    });
+
+    // scroll-offset = height of the original (non-cloned) content
+    const offset = originals.reduce((h, el) => h + el.offsetHeight + 12, 0);
+    track.style.setProperty('--scroll-offset', `-${offset}px`);
+    track.style.setProperty('--scroll-duration', `${cycleMs / 1000}s`);
+    track.classList.add('animating');
+  }
+
+  // ── Render transport ───────────────────────────────────────────────────────
+  function renderTransport(entries) {
+    const track = document.getElementById('transport-track');
+    document.getElementById('transport-count').textContent =
+      entries.length + ' vehicle' + (entries.length !== 1 ? 's' : '');
+
+    if (entries.length === 0) {
+      track.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>No active transports</div>`;
+      return;
+    }
+
+    track.innerHTML = entries.map(e => `
+      <div class="t-card">
+        <div class="t-card-body">
+          <div class="t-car-name">${carName(e)}</div>
+          <div class="t-vin">${e.vin}</div>
+          <div class="t-updated">Updated ${timeAgo(e.updatedAt)}</div>
+        </div>
+        <div class="t-loc">${e.location}</div>
+      </div>
+    `).join('');
+
+    requestAnimationFrame(() => setupScroll('transport-track', CYCLE_MS));
+  }
+
+  // ── Render active leads ────────────────────────────────────────────────────
+  function renderRetail(leads) {
+    const track = document.getElementById('retail-track');
+    document.getElementById('retail-count').textContent =
+      leads.length + ' deal' + (leads.length !== 1 ? 's' : '');
+
+    if (leads.length === 0) {
+      track.innerHTML = `<div class="empty"><div class="empty-icon">🤝</div>No active deals</div>`;
+      return;
+    }
+
+    // Sort newest first
+    const sorted = [...leads].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    track.innerHTML = sorted.map(lead => {
+      const price = lead.priceCents != null
+        ? `<span class="r-price-inline">${dollars(lead.priceCents)}</span>` : '';
+      const stock = lead.stockNumber
+        ? `<span class="r-stock"># ${lead.stockNumber}</span>` : '';
+      return `
+        <div class="r-card">
+          <div class="r-card-body">
+            <div class="r-car-name">${carName(lead)}</div>
+            <div class="r-meta">${stock}${price}</div>
+            <div class="r-assigned"><span class="icon">👤</span>${lead.assignedTo}</div>
+          </div>
+          <div class="r-updated">${timeAgo(lead.createdAt)}</div>
+        </div>
+      `;
+    }).join('');
+
+    requestAnimationFrame(() => setupScroll('retail-track', CYCLE_MS));
+  }
+
+  // ── Fetch & refresh ────────────────────────────────────────────────────────
+  async function refresh() {
+    const dot  = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+
+    try {
+      const [tRes, rRes] = await Promise.all([
+        fetch(API_TRANSPORT),
+        fetch(API_LEADS),
+      ]);
+
+      if (!tRes.ok || !rRes.ok) throw new Error('Bad response');
+
+      const [tData, rData] = await Promise.all([tRes.json(), rRes.json()]);
+
+      renderTransport(tData.entries || []);
+      renderRetail(rData.leads || []);
+
+      const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      dot.className  = 'status-dot';
+      text.textContent = `Live · last refreshed ${now} · updates every 30s`;
+
+    } catch (err) {
+      dot.className  = 'status-dot error';
+      text.textContent = 'Connection error — retrying…';
+      console.error(err);
+    }
+  }
+
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+
+  // Re-setup scroll after window resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(refresh, 400);
+  });
+</script>
+</body>
+</html>
